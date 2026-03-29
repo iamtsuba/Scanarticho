@@ -164,6 +164,10 @@ input::placeholder { color: #6b618f; }
   </div>
   <button class="btn btn-ghost" id="btnEditKey" style="width:100%;padding:8px;font-size:0.78rem;">&#128273; Modifier la cle API Gemini</button>
   <div class="or-div"><div class="line"></div><span>OU recherche manuelle</span><div class="line"></div></div>
+  <div style="display:flex;gap:8px;margin-bottom:8px">
+    <button class="btn" id="btnLangFR" style="flex:1;padding:8px;font-size:0.78rem;background:#7c3aed;color:#fff;">🇫🇷 Cartes FR</button>
+    <button class="btn" id="btnLangEN" style="flex:1;padding:8px;font-size:0.78rem;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#a89ec9;">🌍 Toutes langues</button>
+  </div>
   <div class="search-row">
     <input type="text" id="searchInput" placeholder="Nom de la carte...">
     <button class="btn btn-purple" id="btnSearch" style="padding: 0 16px;">Go</button>
@@ -308,11 +312,24 @@ ge('btnSaveKey').addEventListener('click', function() {
 });
 
 // TCG API
+var searchLang = 'fr';
+
 function searchTCG(q) {
-  var url = 'https://api.pokemontcg.io/v2/cards?q=name:"' + encodeURIComponent(q) + '"&pageSize=20&select=id,name,rarity,set,images,cardmarket,tcgplayer,number';
+  // Add language filter: fr = French cards only
+  var langFilter = searchLang === 'fr' ? ' language:fr' : '';
+  var url = 'https://api.pokemontcg.io/v2/cards?q=name:"' + encodeURIComponent(q) + '"' + encodeURIComponent(langFilter) + '&pageSize=20&select=id,name,rarity,set,images,cardmarket,tcgplayer,number';
   return fetch(url)
     .then(function(r) { return r.json(); })
-    .then(function(d) { return Array.isArray(d.data) ? d.data : []; });
+    .then(function(d) {
+      var cards = Array.isArray(d.data) ? d.data : [];
+      // If no French results, auto-fallback to all languages
+      if (cards.length === 0 && searchLang === 'fr') {
+        showToast('Pas de carte FR trouvée, affichage EN', '');
+        var url2 = 'https://api.pokemontcg.io/v2/cards?q=name:"' + encodeURIComponent(q) + '"&pageSize=20&select=id,name,rarity,set,images,cardmarket,tcgplayer,number';
+        return fetch(url2).then(function(r) { return r.json(); }).then(function(d2) { return Array.isArray(d2.data) ? d2.data : []; });
+      }
+      return cards;
+    });
 }
 
 function getPrice(c) {
@@ -365,15 +382,115 @@ function renderHome() {
 
 // SEARCH
 ge('btnSearch').addEventListener('click', doSearch);
+ge('btnLangFR').addEventListener('click', function() {
+  searchLang = 'fr';
+  ge('btnLangFR').style.background = '#7c3aed';
+  ge('btnLangFR').style.color = '#fff';
+  ge('btnLangEN').style.background = 'rgba(255,255,255,0.08)';
+  ge('btnLangEN').style.color = '#a89ec9';
+  showToast('Mode : cartes françaises 🇫🇷', 'ok');
+});
+ge('btnLangEN').addEventListener('click', function() {
+  searchLang = 'en';
+  ge('btnLangEN').style.background = '#7c3aed';
+  ge('btnLangEN').style.color = '#fff';
+  ge('btnLangFR').style.background = 'rgba(255,255,255,0.08)';
+  ge('btnLangFR').style.color = '#a89ec9';
+  showToast('Mode : toutes langues 🌍', 'ok');
+});
 ge('searchInput').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') doSearch();
 });
 
+
+// Dictionnaire FR -> EN pour les Pokemon
+var FR_TO_EN = {
+  'bulbizarre':'bulbasaur','herbizarre':'ivysaur','florizarre':'venusaur',
+  'salamèche':'charmander','reptincel':'charmeleon','dracaufeu':'charizard',
+  'carapuce':'squirtle','carabaffe':'wartortle','tortank':'blastoise',
+  'chenipan':'caterpie','chrysacier':'metapod','papilusion':'butterfree',
+  'aspicot':'weedle','coconfort':'kakuna','dardargnan':'beedrill',
+  'roucool':'pidgey','roucoups':'pidgeotto','roucarnage':'pidgeot',
+  'rattata':'rattata','rattatac':'raticate','piafabec':'spearow','rapasdepic':'fearow',
+  'abo':'ekans','arbok':'arbok','pikachu':'pikachu','raichu':'raichu',
+  'sabelette':'sandshrew','sablaireau':'sandslash','nidoran':'nidoran',
+  'nidorina':'nidorina','nidoqueen':'nidoqueen','nidorino':'nidorino','nidoking':'nidoking',
+  'mélofée':'clefairy','mélodelfe':'clefable','goupix':'vulpix','feunard':'ninetales',
+  'rondoudou':'jigglypuff','grodoudou':'wigglytuff','nosferapti':'zubat','nosferalto':'golbat',
+  'mystherbe':'oddish','ortide':'gloom','rafflesia':'vileplume','paras':'paras','parasect':'parasect',
+  'mimitoss':'venonat','aéromite':'venomoth','taupiqueur':'diglett','triopikeur':'dugtrio',
+  'miaouss':'meowth','persian':'persian','psykokwak':'psyduck','akwakwak':'golduck',
+  'férosinge':'mankey','colossinge':'primeape','caninos':'growlithe','arcanin':'arcanine',
+  'ptitard':'poliwag','têtarte':'poliwhirl','tartard':'poliwrath',
+  'abra':'abra','kadabra':'kadabra','alakazam':'alakazam',
+  'machoc':'machop','machopeur':'machoke','mackogneur':'machamp',
+  'chétiflor':'bellsprout','nœunœuf':'weepinbell','empiflor':'victreebel',
+  'tentacool':'tentacool','tentacruel':'tentacruel',
+  'racaillou':'geodude','gravalanch':'graveler','grolem':'golem',
+  'ponyta':'ponyta','galopa':'rapidash','ramoloss':'slowpoke','flagadoss':'slowbro',
+  'magnéti':'magnemite','magnéton':'magneton','canarticho':'farfetchd',
+  'doduo':'doduo','dodrio':'dodrio','otaria':'seel','lamantine':'dewgong',
+  'tadmorv':'grimer','grotadmorv':'muk','coquiperl':'shellder','crustabri':'cloyster',
+  'fantominus':'gastly','spectrum':'haunter','ectoplasma':'gengar',
+  'onix':'onix','soporifik':'drowzee','hypno':'hypno',
+  'krabby':'krabby','krabboss':'kingler','voltorbe':'voltorb','électrode':'electrode',
+  'nœunosse':'exeggcute','noadkoko':'exeggutor','osselait':'cubone','ossatueur':'marowak',
+  'kicklee':'hitmonlee','tygnon':'hitmonchan','excelangue':'lickitung',
+  'smogo':'koffing','smogogo':'weezing','rhinocorne':'rhyhorn','rhinoféros':'rhydon',
+  'leveinard':'chansey','saquedeneu':'tangela','kangourex':'kangaskhan',
+  'hypotrempe':'horsea','hypocéan':'seadra','poissirène':'goldeen','poissoroy':'seaking',
+  'stari':'staryu','staross':'starmie','m. mime':'mr. mime','insécateur':'scyther',
+  'lippoutou':'jynx','élektek':'electabuzz','magmar':'magmar','scarabrute':'pinsir',
+  'tauros':'tauros','magicarpe':'magikarp','léviator':'gyarados','lokhlass':'lapras',
+  'métamorph':'ditto','évoli':'eevee','aquali':'vaporeon','voltali':'jolteon',
+  'pyroli':'flareon','porygon':'porygon','amonita':'omanyte','amonistar':'omastar',
+  'kabuto':'kabuto','kabutops':'kabutops','ptéra':'aerodactyl','ronflex':'snorlax',
+  'artikodin':'articuno','électhor':'zapdos','sulfura':'moltres',
+  'minidraco':'dratini','draco':'dragonair','dracolosse':'dragonite',
+  'mewtwo':'mewtwo','mew':'mew',
+  // Gen 2
+  'germignon':'chikorita','macronium':'bayleef','méganium':'meganium',
+  'hericendre':'cyndaquil','feurisson':'quilava','typhlosion':'typhlosion',
+  'kaiminus':'totodile','crocrodil':'croconaw','aligatueur':'feraligatr',
+  'fouinette':'sentret','fouinar':'furret','hoothoot':'hoothoot','noarfang':'noctowl',
+  'germégon':'ledyba','coxyclope':'ledian','spinarak':'spinarak','arakdo':'ariados',
+  'nostenfer':'crobat','loupio':'chinchou','lanturn':'lanturn','pichu':'pichu',
+  'mélo':'cleffa','toudoudou':'igglybuff','togepi':'togepi','togetic':'togetic',
+  'natu':'natu','xatu':'xatu','wattouat':'mareep','lainergie':'flaaffy','ampharos':'ampharos',
+  'ortide':'bellossom','marill':'marill','azumarill':'azumarill','germignon':'sudowoodo',
+  'poliroche':'politoed','houba':'hoppip','voltastro':'skiploom','cotovol':'jumpluff',
+  'granivol':'aipom','feuilleon':'sunkern','heliosol':'sunflora','yanma':'yanma',
+  'axoloto':'wooper','maraison':'quagsire','mentali':'espeon','noctali':'umbreon',
+  'granbull':'snubbull','granbull':'granbull','qwilfish':'qwilfish','cizayox':'scizor',
+  'ptera':'shuckle','farfuret':'sneasel','brindibou':'rowlet','ohmassacre':'dartrix',
+  // Gen 7
+  'brindibou':'rowlet','efflèche':'dartrix','archéduc':'decidueye',
+  'flamiaou':'litten','pyrobut':'torracat','Incineroar':'incineroar',
+  'otaquin':'popplio','otarlette':'brionne','cancrelove':'primarina',
+  // Termes de sets FR->EN
+  'pokemon go':'pokemon go','epée':'sword','bouclier':'shield','ecarlate':'scarlet','violet':'violet'
+};
+
+function translateQuery(q) {
+  var lower = q.toLowerCase().trim();
+  // Check full match
+  if (FR_TO_EN[lower]) return FR_TO_EN[lower];
+  // Check if first word is a pokemon name
+  var words = lower.split(' ');
+  if (FR_TO_EN[words[0]]) {
+    words[0] = FR_TO_EN[words[0]];
+    return words.join(' ');
+  }
+  return q;
+}
+
 function doSearch() {
   var q = ge('searchInput').value.trim();
   if (!q) { showToast('Entre un nom de carte', 'er'); return; }
+  var translated = translateQuery(q);
+  if (translated !== q) showToast('Recherche : ' + translated, '');
   showLoader('Recherche...');
-  searchTCG(q)
+  searchTCG(translated)
     .then(function(cards) { hideLoader(); showResults(cards); })
     .catch(function() { hideLoader(); showToast('Erreur reseau', 'er'); });
 }
