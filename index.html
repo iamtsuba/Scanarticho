@@ -162,6 +162,7 @@ input::placeholder { color: #6b618f; }
     <button class="btn btn-cam" id="btnCam">&#128247; Camera</button>
     <button class="btn btn-scan" id="btnScan">&#9889; Scanner avec IA</button>
   </div>
+  <button class="btn btn-ghost" id="btnEditKey" style="width:100%;padding:8px;font-size:0.78rem;">&#128273; Modifier la cle API Gemini</button>
   <div class="or-div"><div class="line"></div><span>OU recherche manuelle</span><div class="line"></div></div>
   <div class="search-row">
     <input type="text" id="searchInput" placeholder="Nom de la carte...">
@@ -284,6 +285,15 @@ ge('tab-stats').addEventListener('click', function() { showPage('stats'); });
 
 // API KEY
 ge('apiBanner').style.display = gKey ? 'none' : 'block';
+
+ge('btnEditKey').addEventListener('click', function() {
+  ge('apiBanner').style.display = 'block';
+  ge('apiInput').value = gKey;
+  ge('apiInput').type = 'text';
+  setTimeout(function(){ ge('apiInput').type = 'password'; }, 3000);
+  ge('apiInput').focus();
+  ge('apiBanner').scrollIntoView({ behavior: 'smooth' });
+});
 
 ge('btnSaveKey').addEventListener('click', function() {
   var v = ge('apiInput').value.trim();
@@ -457,9 +467,12 @@ ge('btnScan').addEventListener('click', function() {
   showLoader('Gemini analyse la carte...');
 
   var MODELS = [
+    'gemini-2.0-flash',
     'gemini-2.0-flash-lite',
     'gemini-1.5-flash',
     'gemini-1.5-flash-latest',
+    'gemini-1.5-flash-8b',
+    'gemini-1.5-pro',
     'gemini-1.0-pro-vision-latest'
   ];
 
