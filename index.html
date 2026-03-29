@@ -164,12 +164,8 @@ input::placeholder { color: #6b618f; }
   </div>
   <button class="btn btn-ghost" id="btnEditKey" style="width:100%;padding:8px;font-size:0.78rem;">&#128273; Modifier la cle API Gemini</button>
   <div class="or-div"><div class="line"></div><span>OU recherche manuelle</span><div class="line"></div></div>
-  <div style="display:flex;gap:8px;margin-bottom:8px">
-    <button class="btn" id="btnLangFR" style="flex:1;padding:8px;font-size:0.78rem;background:#7c3aed;color:#fff;">🇫🇷 Cartes FR</button>
-    <button class="btn" id="btnLangEN" style="flex:1;padding:8px;font-size:0.78rem;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#a89ec9;">🌍 Toutes langues</button>
-  </div>
   <div class="search-row">
-    <input type="text" id="searchInput" placeholder="Nom de la carte...">
+    <input type="text" id="searchInput" placeholder="Ex: Pikachu 151, Dracaufeu EV...">
     <button class="btn btn-purple" id="btnSearch" style="padding: 0 16px;">Go</button>
   </div>
   <div id="resultsList"></div>
@@ -312,37 +308,48 @@ ge('btnSaveKey').addEventListener('click', function() {
 });
 
 // TCG API
-var searchLang = 'fr';
-
-function searchTCG(q) {
-  // Add language filter: fr = French cards only
-  var langFilter = searchLang === 'fr' ? ' language:fr' : '';
-  var url = 'https://api.pokemontcg.io/v2/cards?q=name:"' + encodeURIComponent(q) + '"' + encodeURIComponent(langFilter) + '&pageSize=20&select=id,name,rarity,set,images,cardmarket,tcgplayer,number';
+function searchTCG(name, setName) {
+  var q = 'name:"' + name + '"';
+  if (setName) q += ' set.name:"' + setName + '"';
+  var url = 'https://api.pokemontcg.io/v2/cards?q=' + encodeURIComponent(q) + '&pageSize=20&select=id,name,rarity,set,images,cardmarket,tcgplayer,number';
   return fetch(url)
     .then(function(r) { return r.json(); })
     .then(function(d) {
       var cards = Array.isArray(d.data) ? d.data : [];
-      // If no French results, auto-fallback to all languages
-      if (cards.length === 0 && searchLang === 'fr') {
-        showToast('Pas de carte FR trouvée, affichage EN', '');
-        var url2 = 'https://api.pokemontcg.io/v2/cards?q=name:"' + encodeURIComponent(q) + '"&pageSize=20&select=id,name,rarity,set,images,cardmarket,tcgplayer,number';
-        return fetch(url2).then(function(r) { return r.json(); }).then(function(d2) { return Array.isArray(d2.data) ? d2.data : []; });
+      // If no result with exact set, retry without set filter
+      if (cards.length === 0 && setName) {
+        showToast('Serie non trouvée, recherche élargie...', '');
+        var url2 = 'https://api.pokemontcg.io/v2/cards?q=' + encodeURIComponent('name:"' + name + '"') + '&pageSize=20&select=id,name,rarity,set,images,cardmarket,tcgplayer,number';
+        return fetch(url2).then(function(r){return r.json();}).then(function(d2){return Array.isArray(d2.data)?d2.data:[];});
       }
       return cards;
     });
 }
 
 function getPrice(c) {
+  // Toujours privilegier CardMarket (prix europeens)
   var cm = c.cardmarket && c.cardmarket.prices;
-  var tcg = c.tcgplayer && c.tcgplayer.prices;
-  if (cm) {
-    return { low: cm.lowPrice, mid: cm.averageSellPrice || cm.avg1, high: cm.avg30, mkt: cm.averageSellPrice || cm.trendPrice };
+  if (cm && (cm.averageSellPrice || cm.trendPrice || cm.avg1)) {
+    return {
+      low: cm.lowPrice || cm.low30,
+      mid: cm.averageSellPrice || cm.avg1 || cm.avg7,
+      high: cm.avg30,
+      mkt: cm.averageSellPrice || cm.trendPrice || cm.avg1
+    };
   }
+  // Fallback TCGPlayer (prix US) - convertir USD en EUR approx
+  var tcg = c.tcgplayer && c.tcgplayer.prices;
   if (tcg) {
     var keys = Object.keys(tcg);
     if (keys.length > 0) {
       var v = tcg[keys[0]];
-      return { low: v.low, mid: v.mid, high: v.high, mkt: v.market };
+      // Approx conversion USD->EUR (0.92)
+      return {
+        low: v.low ? v.low * 0.92 : null,
+        mid: v.mid ? v.mid * 0.92 : null,
+        high: v.high ? v.high * 0.92 : null,
+        mkt: v.market ? v.market * 0.92 : null
+      };
     }
   }
   return null;
@@ -382,22 +389,7 @@ function renderHome() {
 
 // SEARCH
 ge('btnSearch').addEventListener('click', doSearch);
-ge('btnLangFR').addEventListener('click', function() {
-  searchLang = 'fr';
-  ge('btnLangFR').style.background = '#7c3aed';
-  ge('btnLangFR').style.color = '#fff';
-  ge('btnLangEN').style.background = 'rgba(255,255,255,0.08)';
-  ge('btnLangEN').style.color = '#a89ec9';
-  showToast('Mode : cartes françaises 🇫🇷', 'ok');
-});
-ge('btnLangEN').addEventListener('click', function() {
-  searchLang = 'en';
-  ge('btnLangEN').style.background = '#7c3aed';
-  ge('btnLangEN').style.color = '#fff';
-  ge('btnLangFR').style.background = 'rgba(255,255,255,0.08)';
-  ge('btnLangFR').style.color = '#a89ec9';
-  showToast('Mode : toutes langues 🌍', 'ok');
-});
+
 ge('searchInput').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') doSearch();
 });
@@ -471,11 +463,93 @@ var FR_TO_EN = {
   'pokemon go':'pokemon go','epée':'sword','bouclier':'shield','ecarlate':'scarlet','violet':'violet'
 };
 
+
+// Dictionnaire des series FR->EN
+var SERIES_FR_TO_EN = {
+  // Ecarlate et Violet
+  '151':'151',
+  'ecarlate et violet':'scarlet & violet',
+  'ev':'scarlet & violet',
+  'feux palissade':'obsidian flames',
+  'evolution a paldea':'paldea evolved',
+  'mascarade crepusculaire':'twilight masquerade',
+  'couronne stellaire':'stellar crown',
+  'forces temporelles':'temporal forces',
+  // Epee et Bouclier
+  'epee et bouclier':'sword & shield',
+  'eb':'sword & shield',
+  'base epee bouclier':'sword & shield',
+  'ténèbres embrasées':'darkness ablaze',
+  'tenebres embrasees':'darkness ablaze',
+  'vivid voltage':'vivid voltage',
+  'aurores polaires':'chilling reign',
+  'styles de combat':'battle styles',
+  'ciels evolutifs':'evolving skies',
+  'celebration':'celebrations',
+  'celebrations':'celebrations',
+  'fusion strike':'fusion strike',
+  'étoiles brillantes':'brilliant stars',
+  'etoiles brillantes':'brilliant stars',
+  'origine perdue':'lost origin',
+  'tempete argentee':'silver tempest',
+  'pokemon go':'pokemon go',
+  // Soleil et Lune
+  'soleil et lune':'sun & moon',
+  'sl':'sun & moon',
+  'gardiens ascendants':'guardians rising',
+  'ombres ardentes':'burning shadows',
+  'invasion carmin':'crimson invasion',
+  'ultra prisme':'ultra prism',
+  'poings furieux':'forbidden light',
+  'tempete celeste':'celestial storm',
+  'alliance infaillible':'team up',
+  'soleil et lune base':'sun & moon',
+  // XY
+  'xy':'xy',
+  'poings dans le ciel':'flashfire',
+  // Nostalgiques
+  'base':'base set',
+  'jungle':'jungle',
+  'fossile':'fossil',
+  'team rocket':'team rocket',
+  'neo genesis':'neo genesis',
+  'neo destiny':'neo destiny',
+};
+
+function parseSearch(q) {
+  // Parse "Pokemon Serie" format into { name, set }
+  var lower = q.toLowerCase().trim();
+  var words = lower.split(' ');
+
+  // Try to find series name in the query (longest match wins)
+  var foundSet = null;
+  var foundPokemon = null;
+
+  // Check all possible series combinations from end of query
+  for (var len = words.length - 1; len >= 1; len--) {
+    for (var start = 1; start <= words.length - len; start++) {
+      var candidate = words.slice(start, start + len).join(' ');
+      if (SERIES_FR_TO_EN[candidate]) {
+        foundSet = SERIES_FR_TO_EN[candidate];
+        var remaining = words.slice(0, start).concat(words.slice(start + len));
+        foundPokemon = remaining.join(' ').trim();
+        break;
+      }
+    }
+    if (foundSet) break;
+  }
+
+  // Translate pokemon name FR->EN
+  if (foundPokemon) {
+    foundPokemon = FR_TO_EN[foundPokemon] || foundPokemon;
+  }
+
+  return { name: foundPokemon || translateQuery(q), set: foundSet };
+}
+
 function translateQuery(q) {
   var lower = q.toLowerCase().trim();
-  // Check full match
   if (FR_TO_EN[lower]) return FR_TO_EN[lower];
-  // Check if first word is a pokemon name
   var words = lower.split(' ');
   if (FR_TO_EN[words[0]]) {
     words[0] = FR_TO_EN[words[0]];
@@ -487,10 +561,12 @@ function translateQuery(q) {
 function doSearch() {
   var q = ge('searchInput').value.trim();
   if (!q) { showToast('Entre un nom de carte', 'er'); return; }
-  var translated = translateQuery(q);
-  if (translated !== q) showToast('Recherche : ' + translated, '');
+  var parsed = parseSearch(q);
+  var info = parsed.name;
+  if (parsed.set) info += ' · ' + parsed.set;
+  if (info !== q) showToast('Recherche : ' + info, '');
   showLoader('Recherche...');
-  searchTCG(translated)
+  searchTCG(parsed.name, parsed.set)
     .then(function(cards) { hideLoader(); showResults(cards); })
     .catch(function() { hideLoader(); showToast('Erreur reseau', 'er'); });
 }
