@@ -1,0 +1,2 @@
+# Scanarticho
+Scan Pokemon Card
