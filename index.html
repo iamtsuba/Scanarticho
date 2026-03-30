@@ -161,6 +161,39 @@ input::placeholder{color:#6b618f}
 .or-div{display:flex;align-items:center;gap:10px;margin:8px 0}
 .or-div .dl{flex:1;height:1px;background:rgba(255,255,255,.1)}
 .or-div span{font-size:.68rem;color:#6b618f}
+/* FINISH BADGES */
+.finish-row{margin-bottom:12px}
+.finish-row label{font-size:.75rem;color:#a89ec9;display:block;margin-bottom:6px}
+.finish-pills{display:flex;gap:5px;flex-wrap:wrap}
+.fpill{padding:4px 10px;border-radius:20px;font-size:.72rem;font-weight:bold;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);cursor:pointer;color:#a89ec9;white-space:nowrap}
+.fpill.on{background:#1e3a5f;border-color:#3b82f6;color:#93c5fd}
+.fpill.on.holo{background:#2d1b4e;border-color:#a855f7;color:#d8b4fe}
+.fpill.on.rev{background:#1a3a2a;border-color:#22c55e;color:#86efac}
+.fpill.on.ar{background:#3b1f00;border-color:#f59e0b;color:#fcd34d}
+.fpill.on.sar{background:#3b0f0f;border-color:#ef4444;color:#fca5a5}
+.fpill.on.ur{background:#1a1a00;border-color:#ffd700;color:#ffd700}
+.fpill.on.sir{background:#1f0a2e;border-color:#e879f9;color:#f0abfc}
+.fpill.on.im{background:#0a2a2e;border-color:#06b6d4;color:#67e8f9}
+/* CHECKLIST MODAL */
+.checklist-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;flex-direction:column}
+.checklist-overlay.open{display:flex}
+.cl-header{background:#150d30;padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.1);flex-shrink:0}
+.cl-header .cl-title{flex:1;font-size:1rem;font-weight:bold;color:#ffd700}
+.cl-header .cl-count{font-size:.75rem;color:#a89ec9;background:rgba(255,255,255,.08);padding:3px 10px;border-radius:20px}
+.cl-body{flex:1;overflow-y:auto;padding:12px}
+.cl-series-title{font-size:.75rem;font-weight:bold;color:#a89ec9;text-transform:uppercase;letter-spacing:1px;margin:10px 0 6px;padding:0 2px}
+.cl-card{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px;margin-bottom:6px;cursor:pointer;transition:background .15s}
+.cl-card.selected{background:rgba(124,58,237,.15);border-color:#7c3aed}
+.cl-card img{width:38px;border-radius:5px;flex-shrink:0}
+.cl-card .cl-info{flex:1;min-width:0}
+.cl-card .cl-name{font-size:.8rem;font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cl-card .cl-num{font-size:.65rem;color:#6b618f}
+.cl-card .cl-price{font-size:.75rem;color:#ffd700;font-family:monospace}
+.cl-card .cl-check{width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,.2);flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.cl-card.selected .cl-check{background:#7c3aed;border-color:#7c3aed;color:#fff;font-size:.75rem}
+.cl-footer{background:#150d30;padding:12px 16px;border-top:1px solid rgba(255,255,255,.1);flex-shrink:0;display:flex;gap:8px;padding-bottom:max(12px,env(safe-area-inset-bottom))}
+.cl-finish-bar{background:#0d0720;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;gap:5px;overflow-x:auto;flex-shrink:0;scrollbar-width:none}
+.cl-finish-bar::-webkit-scrollbar{display:none}
 </style>
 </head>
 <body>
@@ -185,6 +218,9 @@ input::placeholder{color:#6b618f}
     <div class="sc gold"><div class="sn" id="s-rare">0</div><div class="sl">Rares</div></div>
   </div>
   <!-- FILTERS -->
+  <div style="display:flex;gap:8px;margin-bottom:8px">
+    <button class="btn btn-pur" id="btnChecklist" style="flex:1;padding:9px;font-size:.8rem">📋 Checklist série</button>
+  </div>
   <div class="filter-bar">
     <select class="filter-select" id="filterSeries">
       <option value="">Toutes les séries</option>
@@ -295,6 +331,19 @@ input::placeholder{color:#6b618f}
       <span style="font-size:.78rem;color:#ffd700">EUR</span>
     </div>
     <!-- PSA STATUS -->
+    <div class="finish-row">
+      <label>Type de finition</label>
+      <div class="finish-pills">
+        <div class="fpill on" data-f="normal">Normal</div>
+        <div class="fpill holo" data-f="holo">✨ Holo</div>
+        <div class="fpill rev" data-f="reverse">↩ Reverse</div>
+        <div class="fpill ar" data-f="ar">🎨 AR</div>
+        <div class="fpill sar" data-f="sar">💎 SAR</div>
+        <div class="fpill ur" data-f="ur">⭐ UR</div>
+        <div class="fpill sir" data-f="sir">🌈 SIR</div>
+        <div class="fpill im" data-f="im">🖼 IM</div>
+      </div>
+    </div>
     <div class="psa-row">
       <label>Statut PSA</label>
       <div class="psa-pills">
@@ -367,6 +416,30 @@ input::placeholder{color:#6b618f}
       <button class="btn btn-gold" id="smSave" style="flex:2;padding:11px">💾 Sauvegarder</button>
       <button class="btn btn-pur" id="smDel" style="display:none;width:44px;padding:11px">🗑</button>
     </div>
+  </div>
+</div>
+
+<!-- CHECKLIST MODAL -->
+<div class="checklist-overlay" id="clOverlay">
+  <div class="cl-header">
+    <button class="btn btn-ghost" id="clClose" style="padding:6px 10px;font-size:.8rem">← Retour</button>
+    <div class="cl-title" id="clTitle">Sélection série</div>
+    <div class="cl-count" id="clCount">0 sélectionnée(s)</div>
+  </div>
+  <div class="cl-finish-bar" id="clFinishBar">
+    <div class="fpill on" data-f="normal" style="white-space:nowrap">Normal</div>
+    <div class="fpill holo" data-f="holo">✨ Holo</div>
+    <div class="fpill rev" data-f="reverse">↩ Reverse</div>
+    <div class="fpill ar" data-f="ar">🎨 AR</div>
+    <div class="fpill sar" data-f="sar">💎 SAR</div>
+    <div class="fpill ur" data-f="ur">⭐ UR</div>
+    <div class="fpill sir" data-f="sir">🌈 SIR</div>
+    <div class="fpill im" data-f="im">🖼 IM</div>
+  </div>
+  <div class="cl-body" id="clBody"></div>
+  <div class="cl-footer">
+    <button class="btn btn-ghost" id="clSelectAll" style="flex:1;padding:10px;font-size:.8rem">Tout sélect.</button>
+    <button class="btn btn-gold" id="clAddSelected" style="flex:2;padding:10px">✅ Ajouter à la collection</button>
   </div>
 </div>
 
@@ -870,6 +943,225 @@ function renderStats() {
     +top5.map(function(c,i){ return '<div class="top-item"><span class="trank">#'+(i+1)+'</span><img src="'+(c.img||'')+'" alt="'+(c.name||'')+'"><div style="flex:1"><div class="tname">'+(c.name||'')+(c.psa&&c.psa!=='none'?' 🏆':'')+'</div><div class="bar"><div class="bfill" style="width:'+(effPrice(c)/mx*100).toFixed(0)+'%"></div></div></div><span class="tprice">'+effPrice(c).toFixed(2)+' EUR</span></div>'; }).join('')+'</div>'
     +'<div class="chart-box"><div class="sec-title">🎴 Par rareté</div><div class="rg">'+Object.keys(rc).map(function(r){ var cl=colors[r]||'#6b7280'; return '<div class="rb" style="background:'+cl+'22;border:1px solid '+cl+'44;color:'+cl+'"><span class="rc">'+rc[r]+'</span>'+r+'</div>'; }).join('')+'</div></div>';
 }
+
+// ── FINISH TYPE ──
+var curFinish = 'normal';
+var clFinish = 'normal';
+var clSelected = {};
+
+document.querySelectorAll('.finish-pills .fpill').forEach(function(pill){
+  pill.addEventListener('click', function(){
+    curFinish = pill.dataset.f;
+    document.querySelectorAll('.finish-pills .fpill').forEach(function(p){ p.classList.remove('on'); });
+    pill.classList.add('on');
+  });
+});
+
+// Update makeCard and fillModal to include finish
+var _origMakeCard = makeCard;
+makeCard = function(c) {
+  var card = _origMakeCard(c);
+  card.finish = 'normal';
+  return card;
+};
+
+var _origFillModal = fillModal;
+fillModal = function(c) {
+  _origFillModal(c);
+  curFinish = c.finish || 'normal';
+  document.querySelectorAll('.finish-pills .fpill').forEach(function(p){
+    p.classList.toggle('on', p.dataset.f === curFinish);
+  });
+};
+
+var _origSave = ge('btnSave').onclick;
+ge('btnSave').addEventListener('click', function(){
+  if (curCard) curCard.finish = curFinish;
+}, true);
+
+// ── CHECKLIST ──
+var FINISH_LABELS = {normal:'Normal',holo:'✨ Holo',reverse:'↩ Reverse',ar:'🎨 AR',sar:'💎 SAR',ur:'⭐ UR',sir:'🌈 SIR',im:'🖼 IM'};
+var FINISH_COLORS = {normal:'#a89ec9',holo:'#d8b4fe',reverse:'#86efac',ar:'#fcd34d',sar:'#fca5a5',ur:'#ffd700',sir:'#f0abfc',im:'#67e8f9'};
+
+ge('btnChecklist').addEventListener('click', openChecklist);
+
+function openChecklist() {
+  // Ask which series to browse
+  var sets = {};
+  // Combine TCG known sets + user collection sets
+  var knownSets = ['151','Scarlet & Violet','Obsidian Flames','Paldea Evolved','Twilight Masquerade','Stellar Crown','Temporal Forces','Sword & Shield','Pokemon GO','Celebrations','Brilliant Stars','Lost Origin','Silver Tempest','Fusion Strike','Chilling Reign','Battle Styles','Evolving Skies','Darkness Ablaze','Base Set','Jungle','Fossil'];
+  col.forEach(function(c){ if(c.set) sets[c.set]=1; });
+  knownSets.forEach(function(s){ sets[s]=1; });
+  var setList = Object.keys(sets).sort();
+
+  // Show series picker
+  var html = '<div style="padding:12px;"><div style="font-size:.8rem;color:#a89ec9;margin-bottom:10px;font-weight:bold">Choisir une série</div>';
+  setList.forEach(function(s){
+    var safeSet = s.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+    html += '<div class="cl-card" data-set="'+safeSet+'" style="cursor:pointer"><div class="cl-info"><div class="cl-name">'+s+'</div></div><div style="color:#a89ec9;font-size:.8rem">→</div></div>';
+  });
+  html += '</div>';
+  ge('clBody').innerHTML = html;
+  ge('clBody')._cards = null;
+  // Use event delegation for series cards
+  ge('clBody').querySelectorAll('.cl-card[data-set]').forEach(function(el){
+    el.addEventListener('click', function(){ loadChecklist(el.dataset.set); });
+  });
+  ge('clTitle').textContent = 'Choisir une série';
+  ge('clCount').textContent = '';
+  ge('clOverlay').classList.add('open');
+}
+
+function loadChecklist(setName) {
+  ge('clTitle').textContent = setName;
+  ge('clBody').innerHTML = '<div style="text-align:center;padding:30px;color:#a89ec9">Chargement des cartes...</div>';
+  clSelected = {};
+  updateClCount();
+  // Fetch all cards from this set
+  var url = 'https://api.pokemontcg.io/v2/cards?q=set.name:"' + encodeURIComponent(setName) + '"&pageSize=250&orderBy=number&select=id,name,number,rarity,images,cardmarket,tcgplayer';
+  fetch(url).then(function(r){ return r.json(); }).then(function(d){
+    var cards = Array.isArray(d.data) ? d.data : [];
+    renderChecklist(cards, setName);
+  }).catch(function(){
+    ge('clBody').innerHTML = '<div style="text-align:center;padding:20px;color:#ef4444">Erreur de chargement</div>';
+  });
+}
+
+function renderChecklist(cards, setName) {
+  if (!cards.length) { ge('clBody').innerHTML = '<div style="text-align:center;padding:20px;color:#6b618f">Aucune carte trouvée</div>'; return; }
+  var html = '';
+  // Group by rarity
+  var groups = {}, gOrder = [];
+  cards.forEach(function(c){
+    var r = c.rarity || 'Autre';
+    if (!groups[r]) { groups[r]=[]; gOrder.push(r); }
+    groups[r].push(c);
+  });
+  gOrder.forEach(function(rarity){
+    html += '<div class="cl-series-title">' + rarity + ' (' + groups[rarity].length + ')</div>';
+    groups[rarity].forEach(function(c){
+      var p = getPrice(c); var pr = p?(p.mkt||p.mid):null;
+      var inCol = col.some(function(x){ return x.id===c.id; });
+            var selClass = inCol ? ' selected' : '';
+      html += '<div class="cl-card'+selClass+'" data-cid="'+c.id+'">'
+        +'<img src="'+(c.images&&c.images.small||'')+'" alt="'+(c.name||'')+'" loading="lazy">'
+        +'<div class="cl-info"><div class="cl-name">'+(c.name||'')+'</div>'
+        +'<div class="cl-num">#'+(c.number||'?')+(inCol?'  ✓ En collection':'')+'</div>'
+        +'<div class="cl-price">'+(pr?pr.toFixed(2)+' EUR':'')+'</div></div>'
+        +'<div class="cl-check">'+(clSelected[c.id]||inCol?'✓':'')+'</div>'
+        +'</div>';
+      if (clSelected[c.id] || inCol) clSelected[c.id] = c;
+    });
+  });
+  ge('clBody').innerHTML = html;
+  ge('clBody').dataset.setName = setName;
+  ge('clBody')._cards = cards;
+  // Event delegation for card toggle
+  ge('clBody').addEventListener('click', function clHandler(e){
+    var card = e.target.closest('.cl-card[data-cid]');
+    if (!card) return;
+    var id = card.dataset.cid;
+    var cardData = (ge('clBody')._cards||[]).find(function(c){ return c.id===id; });
+    if (!cardData) return;
+    if (clSelected[id]) {
+      delete clSelected[id];
+      card.classList.remove('selected');
+      card.querySelector('.cl-check').textContent = '';
+    } else {
+      clSelected[id] = cardData;
+      card.classList.add('selected');
+      card.querySelector('.cl-check').textContent = '✓';
+    }
+    updateClCount();
+  });
+  updateClCount();
+}
+
+function toggleCl(el, id) {
+  var cards = ge('clBody')._cards || [];
+  var card = cards.find(function(c){ return c.id===id; });
+  if (!card) return;
+  if (clSelected[id]) {
+    delete clSelected[id];
+    el.classList.remove('selected');
+    el.querySelector('.cl-check').textContent = '';
+  } else {
+    clSelected[id] = card;
+    el.classList.add('selected');
+    el.querySelector('.cl-check').textContent = '✓';
+  }
+  updateClCount();
+}
+
+function updateClCount() {
+  var n = Object.keys(clSelected).length;
+  ge('clCount').textContent = n + ' sélectionnée(s)';
+}
+
+// Finish bar in checklist
+document.querySelectorAll('#clFinishBar .fpill').forEach(function(pill){
+  pill.addEventListener('click', function(){
+    clFinish = pill.dataset.f;
+    document.querySelectorAll('#clFinishBar .fpill').forEach(function(p){ p.classList.remove('on'); });
+    pill.classList.add('on');
+  });
+});
+
+ge('clSelectAll').addEventListener('click', function(){
+  var cards = ge('clBody')._cards || [];
+  var allSelected = cards.every(function(c){ return clSelected[c.id]; });
+  if (allSelected) {
+    // Deselect all
+    clSelected = {};
+    document.querySelectorAll('#clBody .cl-card').forEach(function(el){
+      el.classList.remove('selected'); el.querySelector('.cl-check').textContent = '';
+    });
+  } else {
+    // Select all
+    cards.forEach(function(c){ clSelected[c.id] = c; });
+    document.querySelectorAll('#clBody .cl-card').forEach(function(el){
+      el.classList.add('selected'); el.querySelector('.cl-check').textContent = '✓';
+    });
+  }
+  updateClCount();
+});
+
+ge('clAddSelected').addEventListener('click', function(){
+  var ids = Object.keys(clSelected);
+  if (!ids.length) { toast('Sélectionne au moins une carte', 'er'); return; }
+  var added = 0, updated = 0;
+  ids.forEach(function(id){
+    var c = clSelected[id];
+    var p = getPrice(c); var mkt = p?(p.mkt||p.mid):null;
+    var newCard = {
+      id: c.id, name: c.name, set: ge('clBody').dataset.setName,
+      number: c.number, rarity: c.rarity,
+      img: c.images&&(c.images.small||c.images.large)||'',
+      price: mkt, customPrice: null,
+      lastSale: p?p.lastSale:null, avg7: p?p.avg7:null,
+      priceLow: p?p.low:null, priceMid: p?p.mid:null, priceHigh: p?p.high:null,
+      condition: 'NM', qty: 1, psa: 'none', finish: clFinish
+    };
+    var ex = col.findIndex(function(x){ return x.id===c.id && x.finish===clFinish; });
+    if (ex >= 0) { col[ex].qty = (col[ex].qty||1)+1; updated++; }
+    else { col.push(newCard); added++; }
+  });
+  saveCol();
+  ge('clOverlay').classList.remove('open');
+  renderHome();
+  toast('✅ '+added+' ajoutée(s), '+updated+' mise(s) à jour', 'ok');
+  clSelected = {};
+});
+
+ge('clClose').addEventListener('click', function(){
+  // If showing cards, go back to series picker; else close
+  if (ge('clBody')._cards && ge('clBody')._cards.length) {
+    ge('clBody')._cards = null;
+    openChecklist();
+  } else {
+    ge('clOverlay').classList.remove('open');
+  }
+});
 
 // ── INIT ──
 renderHome();
