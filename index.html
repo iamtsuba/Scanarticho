@@ -36,6 +36,15 @@ body { background: #0d0720; color: #f0eeff; font-family: Arial, sans-serif; min-
 .card-name { font-weight: bold; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card-set { font-size: 0.65rem; color: #6b618f; margin-top: 2px; }
 .card-price { font-size: 0.8rem; color: #ffd700; margin-top: 4px; font-weight: bold; font-family: monospace; }
+.card-price-custom { font-size: 0.7rem; color: #22c55e; margin-top: 1px; font-family: monospace; }
+.series-header { grid-column: 1/-1; display: flex; align-items: center; gap: 10px; margin: 14px 0 6px; }
+.series-title { font-size: 0.78rem; font-weight: bold; color: #a89ec9; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
+.series-line { flex: 1; height: 1px; background: rgba(255,255,255,0.1); }
+.series-val { font-size: 0.72rem; color: #ffd700; font-family: monospace; white-space: nowrap; }
+.last-sale { font-size: 0.68rem; color: #22c55e; margin-top: 2px; }
+.price-edit-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; background: rgba(255,215,0,0.06); border: 1px solid rgba(255,215,0,0.2); border-radius: 10px; padding: 10px 12px; }
+.price-edit-row label { font-size: 0.78rem; color: #a89ec9; flex: 1; }
+.price-edit-input { width: 90px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,215,0,0.3); border-radius: 8px; padding: 6px 10px; color: #ffd700; font-size: 0.9rem; font-family: monospace; text-align: right; outline: none; }
 .empty { text-align: center; padding: 50px 20px; color: #6b618f; }
 .empty .icon { font-size: 3rem; margin-bottom: 12px; }
 .api-banner { background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.3); border-radius: 12px; padding: 12px; margin-bottom: 14px; }
@@ -195,6 +204,17 @@ input::placeholder { color: #6b618f; }
       <div class="price-cell"><small>Bas</small><div class="val val-lo" id="mLow">-</div></div>
       <div class="price-cell"><small>Moyen</small><div class="val val-md" id="mMid">-</div></div>
       <div class="price-cell"><small>Haut</small><div class="val val-hi" id="mHigh">-</div></div>
+    </div>
+    <div class="price-row" style="margin-bottom:14px">
+      <div class="price-cell" style="grid-column:1/-1;text-align:left">
+        <small>&#128722; Derniere vente CardMarket</small>
+        <div class="val val-hi" id="mLastSale" style="margin-top:3px">-</div>
+      </div>
+    </div>
+    <div class="price-edit-row">
+      <label>&#9999;&#65039; Prix estime (modifiable)</label>
+      <input type="number" class="price-edit-input" id="mCustomPrice" step="0.01" min="0" placeholder="0.00">
+      <span style="font-size:.8rem;color:#ffd700">EUR</span>
     </div>
     <div class="cond-label">Condition</div>
     <div class="cond-pills">
@@ -356,11 +376,15 @@ function getPrice(c) {
 }
 
 // HOME
+function getEffectivePrice(c) {
+  return (c.customPrice !== null && c.customPrice !== undefined) ? c.customPrice : (c.price || 0);
+}
+
 function renderHome() {
   var tot = 0, val = 0, rare = 0;
   col.forEach(function(c) {
     tot += (c.qty || 1);
-    val += (c.price || 0) * (c.qty || 1);
+    val += getEffectivePrice(c) * (c.qty || 1);
     if (c.rarity && c.rarity !== 'Common' && c.rarity !== 'Uncommon') rare++;
   });
   ge('s-tot').textContent = tot;
@@ -373,17 +397,49 @@ function renderHome() {
     return;
   }
   g.innerHTML = '';
+
+  // Group by series
+  var groups = {};
+  var groupOrder = [];
   col.forEach(function(c, i) {
-    var d = document.createElement('div');
-    d.className = 'card-item';
-    d.innerHTML = '<img src="' + (c.img || '') + '" alt="' + (c.name || '') + '" loading="lazy">'
-      + '<div class="card-info">'
-      + '<div class="card-name">' + (c.name || '?') + '</div>'
-      + '<div class="card-set">' + (c.set || '') + '</div>'
-      + '<div class="card-price">' + fp(c.price) + '</div>'
-      + '</div>';
-    d.addEventListener('click', (function(idx) { return function() { openExisting(idx); }; })(i));
-    g.appendChild(d);
+    var s = c.set || 'Autres';
+    if (!groups[s]) { groups[s] = []; groupOrder.push(s); }
+    groups[s].push({ card: c, idx: i });
+  });
+
+  groupOrder.forEach(function(setName) {
+    var items = groups[setName];
+    var setVal = items.reduce(function(sum, item) {
+      return sum + getEffectivePrice(item.card) * (item.card.qty || 1);
+    }, 0);
+
+    // Series header
+    var hdr = document.createElement('div');
+    hdr.className = 'series-header';
+    hdr.innerHTML = '<div class="series-line"></div>'
+      + '<div class="series-title">' + setName + '</div>'
+      + '<div class="series-val">' + setVal.toFixed(2) + ' EUR</div>'
+      + '<div class="series-line"></div>';
+    g.appendChild(hdr);
+
+    // Cards in this series
+    items.forEach(function(item) {
+      var c = item.card;
+      var i = item.idx;
+      var effPrice = getEffectivePrice(c);
+      var isCustom = c.customPrice !== null && c.customPrice !== undefined;
+      var d = document.createElement('div');
+      d.className = 'card-item';
+      d.innerHTML = '<img src="' + (c.img || '') + '" alt="' + (c.name || '') + '" loading="lazy">'
+        + '<div class="card-info">'
+        + '<div class="card-name">' + (c.name || '?') + '</div>'
+        + '<div class="last-sale">' + (c.lastSale ? '&#128722; ' + c.lastSale.toFixed(2) + ' EUR' : '') + '</div>'
+        + '<div class="card-price">' + (effPrice ? effPrice.toFixed(2) + ' EUR' : '-') + '</div>'
+        + (isCustom ? '<div class="card-price-custom">&#9999;&#65039; Prix perso</div>' : '')
+        + '</div>';
+      d.addEventListener('click', (function(idx) { return function() { openExisting(idx); }; })(i));
+      g.appendChild(d);
+    });
   });
 }
 
@@ -741,6 +797,8 @@ ge('btnScan').addEventListener('click', function() {
 // MODAL
 function makeCard(c) {
   var p = getPrice(c);
+  var mkt = p ? (p.mkt || p.mid) : null;
+  var lastSale = c.cardmarket && c.cardmarket.prices && c.cardmarket.prices.avg1 ? c.cardmarket.prices.avg1 : null;
   return {
     id: c.id,
     name: c.name,
@@ -748,7 +806,9 @@ function makeCard(c) {
     number: c.number,
     rarity: c.rarity,
     img: c.images && (c.images.small || c.images.large),
-    price: p ? (p.mkt || p.mid) : null,
+    price: mkt,
+    customPrice: null,
+    lastSale: lastSale,
     priceLow: p ? p.low : null,
     priceMid: p ? p.mid : null,
     priceHigh: p ? p.high : null,
@@ -765,6 +825,8 @@ function fillModal(c) {
   ge('mLow').textContent = fp(c.priceLow);
   ge('mMid').textContent = fp(c.priceMid);
   ge('mHigh').textContent = fp(c.priceHigh);
+  ge('mLastSale').textContent = c.lastSale ? c.lastSale.toFixed(2) + ' EUR (avg 24h)' : 'Non disponible';
+  ge('mCustomPrice').value = c.customPrice !== null && c.customPrice !== undefined ? c.customPrice : (c.price ? c.price.toFixed(2) : '');
   ge('mQty').textContent = curQty;
   document.querySelectorAll('.cond-pill').forEach(function(p) {
     p.classList.toggle('on', p.getAttribute('data-c') === curCond);
@@ -826,6 +888,8 @@ ge('btnSave').addEventListener('click', function() {
   if (!curCard) return;
   curCard.qty = curQty;
   curCard.condition = curCond;
+  var cp = parseFloat(ge('mCustomPrice').value);
+  curCard.customPrice = isNaN(cp) ? null : cp;
   if (curCard._idx !== undefined) {
     var saved = {};
     Object.keys(curCard).forEach(function(k) { if (k !== '_idx' && k !== '_new') saved[k] = curCard[k]; });
